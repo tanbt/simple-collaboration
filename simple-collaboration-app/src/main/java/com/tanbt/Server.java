@@ -7,7 +7,9 @@ import io.rsocket.core.RSocketServer;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import io.rsocket.util.DefaultPayload;
 import java.io.IOException;
+import java.time.Duration;
 import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -24,6 +26,13 @@ public class Server {
             public Mono<Payload> requestResponse(Payload payload) {
                 System.out.println(payload.getDataUtf8());
                 return Mono.just(DefaultPayload.create("Hello from server."));
+            }
+
+            @Override
+            public Flux<Payload> requestStream(Payload payload) {
+                System.out.println(payload.getDataUtf8());
+                return Flux.interval(Duration.ofMillis(1000))
+                    .map(aLong -> DefaultPayload.create("Update: " + aLong));
             }
         };
 
