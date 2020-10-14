@@ -24,15 +24,24 @@ public class Server {
         RSocket rSocket = new RSocket() {
             @Override
             public Mono<Payload> requestResponse(Payload payload) {
-                System.out.println(payload.getDataUtf8());
-                return Mono.just(DefaultPayload.create("Hello from server."));
+                switch (payload.getMetadataUtf8()) {
+                    case "hello":
+                        return helloRequestResponseHandler(payload);
+                    default:
+                        System.out.println("Server received: " + payload.getDataUtf8());
+                        return Mono.empty();
+                }
             }
 
             @Override
             public Flux<Payload> requestStream(Payload payload) {
-                System.out.println(payload.getDataUtf8());
-                return Flux.interval(Duration.ofMillis(1000))
-                    .map(aLong -> DefaultPayload.create("Update: " + aLong));
+                switch (payload.getMetadataUtf8()) {
+                    case "subscribe":
+                        return subscribeRequestStreamHandler();
+                    default:
+                        System.out.println("Server received: " + payload.getDataUtf8());
+                        return Flux.empty();
+                }
             }
         };
 
@@ -43,5 +52,14 @@ public class Server {
 
         System.in.read();
         server.dispose();
+    }
+
+    public static Mono<Payload> helloRequestResponseHandler(Payload payload) {
+        return Mono.just(DefaultPayload.create("Hello client " + payload.getDataUtf8()));
+    }
+
+    public static Flux<Payload> subscribeRequestStreamHandler() {
+        return Flux.interval(Duration.ofMillis(1000))
+            .map(aLong -> DefaultPayload.create("Update: " + aLong));
     }
 }

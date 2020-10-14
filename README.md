@@ -16,3 +16,6 @@ When two `simple-collaboration-app`s connects to the same `simple-collaboration-
 
 ## Run
 * Run `simple-collaboration-app`
+
+## References
+* [RoutingMetadata](https://github.com/rsocket/rsocket/blob/master/Extensions/Routing.md)

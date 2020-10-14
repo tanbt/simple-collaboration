@@ -6,6 +6,7 @@ import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.util.DefaultPayload;
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * The browser
@@ -13,6 +14,7 @@ import java.io.IOException;
 public class Client {
 
     private static int PORT = 7000;
+    private static final String clientId = UUID.randomUUID().toString();
     private static RSocket socket;
 
     public static void main(String[] args) throws IOException {
@@ -27,14 +29,15 @@ public class Client {
     }
 
     private static void sayHello() {
-        socket.requestResponse(DefaultPayload.create("Hello from client"))
+        socket
+            .requestResponse(DefaultPayload.create(clientId, "hello"))
             .map(Payload::getDataUtf8)
             .doOnNext(System.out::println)
             .block();
     }
 
     private static void subscribe() {
-        socket.requestStream(DefaultPayload.create("Request streaming"))
+        socket.requestStream(DefaultPayload.create(clientId, "subscribe"))
             .map(Payload::getDataUtf8)
             .doOnNext(System.out::println)
             .subscribe();
