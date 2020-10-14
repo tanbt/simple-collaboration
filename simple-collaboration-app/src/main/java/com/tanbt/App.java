@@ -30,8 +30,10 @@ public class App {
                 @Override
                 public Mono<Payload> requestResponse(Payload payload) {
                     switch (payload.getMetadataUtf8()) {
-                        case "hello":
-                            return helloRequestResponseHandler(payload);
+                        case "subscribe":
+                            return subscribeRequestResponseHandler(payload, sendingSocket);
+                        case "get":
+                            return get();
                         default:
                             System.out.println("Server received: " + payload.getDataUtf8());
                             return Mono.empty();
@@ -53,11 +55,14 @@ public class App {
                 public Mono<Void> fireAndForget(Payload payload) {
                     switch (payload.getMetadataUtf8()) {
                         case "subscribe":
-                            return subscribeFireAndForget(payload.getDataUtf8(), sendingSocket);
+                            return subscribeFireAndForget(payload, sendingSocket);
+                        case "set":
+                            set(payload.getDataUtf8());
+                            break;
                         default:
                             System.out.println("Server received: " + payload.getDataUtf8());
-                            return Mono.empty();
                     }
+                    return Mono.empty();
                 }
             });
         };
@@ -67,36 +72,31 @@ public class App {
             .subscribe();
         System.out.println("Web server is running at port " + PORT);
 
-        new Thread(App::mockUpdater).start();
-
         System.in.read();
         server.dispose();
     }
 
-    // Accidentally push data to subscribing clients after a delay
-    private static void mockUpdater() {
-        int i = 0;
-        while (true) {
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            sharedData = String.valueOf(++i);
-            clientRSockets.entrySet().forEach(entry -> {
-                new Thread(() -> {
-                    entry.getValue().fireAndForget(DefaultPayload.create("Data: " + sharedData))
-                        .doOnError(err -> {
-                            System.out.println("Channel closed on client: " + entry.getKey());
-                            clientRSockets.remove(entry.getKey());
-                        }).block();
-                }).start();
-            });
-        }
+    private static void set(String newData) {
+        sharedData = newData;
+        System.out.println("Shared data updated: " + sharedData);
+        clientRSockets.entrySet().forEach(entry -> {
+            new Thread(() -> {
+                entry.getValue().fireAndForget(DefaultPayload.create("Data updated: " + sharedData))
+                    .doOnError(err -> {
+                        System.out.println("Channel closed on client: " + entry.getKey());
+                        clientRSockets.remove(entry.getKey());
+                    }).block();
+            }).start();
+        });
     }
 
-    public static Mono<Payload> helloRequestResponseHandler(Payload payload) {
-        return Mono.just(DefaultPayload.create("Hello client " + payload.getDataUtf8()));
+    public static Mono<Payload> get() {
+        return Mono.just(DefaultPayload.create(sharedData));
+    }
+
+    public static Mono<Payload> subscribeRequestResponseHandler(Payload payload, RSocket clientSocket) {
+        clientRSockets.put(payload.getDataUtf8(), clientSocket);
+        return Mono.just(DefaultPayload.create("Confirm client subscribed: " + payload.getDataUtf8()));
     }
 
     public static Flux<Payload> subscribeRequestStreamHandler() {
@@ -104,8 +104,8 @@ public class App {
             .map(aLong -> DefaultPayload.create("Update: " + aLong));
     }
 
-    public static Mono<Void> subscribeFireAndForget(String clientId, RSocket clientSocket) {
-        clientRSockets.put(clientId, clientSocket);
+    public static Mono<Void> subscribeFireAndForget(Payload payload, RSocket clientSocket) {
+        clientRSockets.put(payload.getDataUtf8(), clientSocket);
         return Mono.empty();
     }
 }

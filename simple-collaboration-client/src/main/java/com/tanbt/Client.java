@@ -6,7 +6,7 @@ import io.rsocket.SocketAcceptor;
 import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.util.DefaultPayload;
-import java.io.IOException;
+import java.util.Scanner;
 import java.util.UUID;
 import reactor.core.publisher.Mono;
 
@@ -19,16 +19,36 @@ public class Client {
     private static final String clientId = UUID.randomUUID().toString();
     private static RSocket socket;
 
-    public static void main(String[] args) throws IOException {
-        socket = RSocketConnector.connectWith(
-            TcpClientTransport.create("localhost", PORT)
-        ).block();
-
-        //sayHello();
-        //subscribeStream();
-        subscribe();
-
-        System.in.read();
+    public static void main(String[] args) {
+        socket = RSocketConnector.create()
+            .acceptor(
+                SocketAcceptor.forFireAndForget(payload -> {
+                    System.out.println("\n" + payload.getDataUtf8());
+                    return Mono.empty();
+                }))
+            .connect(TcpClientTransport.create("localhost", PORT))
+            .block();
+        System.out.println("Client id: " + clientId);
+        Scanner in = new Scanner(System.in);
+        String cmd = "";
+        do {
+            System.out.print("Enter a command [sub, set, get, exit]: ");
+            cmd = in.nextLine();
+            switch (cmd) {
+                case "sub":
+                    subscribeWithConfirmation();
+                    break;
+                case "set":
+                    System.out.print("Please enter new data: ");
+                    String newData = in.nextLine();
+                    send(newData);
+                    break;
+                case "get": {
+                    get();
+                    break;
+                }
+            }
+        } while (!"exit".equals(cmd));
     }
 
     private static void sayHello() {
@@ -46,16 +66,21 @@ public class Client {
             .subscribe();
     }
 
-    public static void subscribe() {
-        RSocket rsocket =
-            RSocketConnector.create()
-                .acceptor(
-                    SocketAcceptor.forFireAndForget(payload -> {
-                        System.out.println(payload.getDataUtf8());
-                        return Mono.empty();
-                    }))
-                .connect(TcpClientTransport.create("localhost", 7000))
-                .block();
-        rsocket.fireAndForget(DefaultPayload.create(clientId, "subscribe")).block();
+    private static void subscribeWithConfirmation() {
+        socket.requestResponse(DefaultPayload.create(clientId, "subscribe"))
+            .map(Payload::getDataUtf8).doOnNext(System.out::println).block();
+    }
+
+    private static void subscribe() {
+        socket.fireAndForget(DefaultPayload.create(clientId, "subscribe")).block();
+    }
+
+    private static void send(String newData) {
+        socket.fireAndForget(DefaultPayload.create(newData, "set")).block();
+    }
+
+    private static void get() {
+        socket.requestResponse(DefaultPayload.create(clientId, "get"))
+            .map(Payload::getDataUtf8).doOnNext(data -> System.out.println("Current data: " + data)).block();
     }
 }
