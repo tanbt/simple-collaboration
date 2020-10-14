@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 /**
  * The web server
  */
-public class Server {
+public class App {
 
     private static int PORT = 7000;
 
