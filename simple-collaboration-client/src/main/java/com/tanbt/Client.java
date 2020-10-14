@@ -20,6 +20,9 @@ public class Client {
     private static RSocket socket;
 
     public static void main(String[] args) {
+        if (args[0] != null) {
+            PORT = Integer.valueOf(args[0]);
+        }
         socket = RSocketConnector.create()
             .acceptor(
                 SocketAcceptor.forFireAndForget(payload -> {

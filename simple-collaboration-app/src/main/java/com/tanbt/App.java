@@ -24,7 +24,9 @@ public class App {
     private static String sharedData = "";
 
     public static void main(String[] args) throws IOException {
-
+        if (args[0] != null) {
+            PORT = Integer.valueOf(args[0]);
+        }
         SocketAcceptor socketAcceptor = (setup, sendingSocket) -> {
             return Mono.just(new RSocket() {
                 @Override
