@@ -19,3 +19,8 @@ When two `simple-collaboration-app`s connects to the same `simple-collaboration-
 
 ## References
 * [RoutingMetadata](https://github.com/rsocket/rsocket/blob/master/Extensions/Routing.md)
+* [Support TLS](https://stackoverflow.com/questions/58944152/rsocket-not-working-when-secured-with-tls-server-java-lang-unsupportedoperatio)
+
+## Question & future development
+* How to properly close a communication without `java.io.IOException: An existing connection was forcibly closed by the remote host` and `ClosedChannelException`.
+* Client can fire-and-forget to "unsubscribe" itself after being subscribed.
