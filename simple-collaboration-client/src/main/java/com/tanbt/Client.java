@@ -39,7 +39,7 @@ public class Client {
             cmd = in.nextLine();
             switch (cmd) {
                 case "sub":
-                    System.out.print("Please enter client id, no whitespace: ");
+                    System.out.print("Please enter client id [NO WHITE SPACES]: ");
                     clientId = in.nextLine();
                     subscribeWithConfirmation();
                     break;

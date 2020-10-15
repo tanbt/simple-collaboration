@@ -1,6 +1,8 @@
 package com.tanbt;
 
 import akka.actor.typed.ActorSystem;
+import com.tanbt.protocol.CreateSubscriber;
+import com.tanbt.protocol.MessageProtocol;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.SocketAcceptor;
@@ -24,8 +26,7 @@ public class App {
     private static Map<String, RSocket> clientRSockets = new ConcurrentHashMap<>();
     private static String sharedData = "";
 
-    // The message (or protocol) is a String object
-    private static ActorSystem<String> appRootActor;
+    private static ActorSystem<MessageProtocol> appRootActor;
 
     public static void main(String[] args) throws IOException {
         appRootActor = ActorSystem.create(RootActor.create(), "webapp");
@@ -104,7 +105,7 @@ public class App {
 
     public static Mono<Payload> subscribeRequestResponseHandler(Payload payload, RSocket clientSocket) {
         clientRSockets.put(payload.getDataUtf8(), clientSocket);
-        appRootActor.tell("subscribe");
+        appRootActor.tell(new CreateSubscriber(payload.getDataUtf8()));
         return Mono.just(DefaultPayload.create("Confirm client subscribed: " + payload.getDataUtf8()));
     }
 

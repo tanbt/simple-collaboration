@@ -5,23 +5,27 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
+import com.tanbt.protocol.MessageProtocol;
+import com.tanbt.protocol.PrintSelf;
 
-public class SubscriberActor extends AbstractBehavior<String> {
+public class SubscriberActor extends AbstractBehavior<MessageProtocol> {
 
-    static Behavior<String> create() {
+    static Behavior<MessageProtocol> create() {
         return Behaviors.setup(SubscriberActor::new);
     }
 
-    private SubscriberActor(ActorContext<String> context) {
+    private SubscriberActor(ActorContext<MessageProtocol> context) {
         super(context);
     }
 
     @Override
-    public Receive<String> createReceive() {
-        return newReceiveBuilder().onMessageEquals("printSelf", this::printSelf).build();
+    public Receive<MessageProtocol> createReceive() {
+        return newReceiveBuilder()
+            .onMessage(PrintSelf.class, this::printSelf)
+            .build();
     }
 
-    private Behavior<String> printSelf() {
+    private Behavior<MessageProtocol> printSelf(MessageProtocol message) {
         System.out.println("Subscriber: " + getContext().getSelf());
         return this;
     }

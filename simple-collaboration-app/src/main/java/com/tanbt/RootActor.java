@@ -3,44 +3,45 @@ package com.tanbt;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
-import akka.actor.typed.Signal;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import java.util.UUID;
+import com.tanbt.protocol.CreateSubscriber;
+import com.tanbt.protocol.MessageProtocol;
+import com.tanbt.protocol.PrintSelf;
 
 /**
  * The root actor of the application
  */
-public class RootActor extends AbstractBehavior<String> {
+public class RootActor extends AbstractBehavior<MessageProtocol> {
 
-    public static Behavior<String> create() {
+    public static Behavior<MessageProtocol> create() {
         return Behaviors.setup(RootActor::new);
     }
 
-    private RootActor(ActorContext<String> context) {
+    private RootActor(ActorContext<MessageProtocol> context) {
         super(context);
-        context.getLog().info("IoT Application started");
+        context.getLog().info("Root actor started.");
     }
 
     @Override
-    public Receive<String> createReceive() {
+    public Receive<MessageProtocol> createReceive() {
         return newReceiveBuilder()
             .onSignal(PostStop.class, signal -> onPostStop())
-            .onMessageEquals("subscribe", this::spawnNewSubscriber)
+            .onMessage(CreateSubscriber.class, this::spawnNewSubscriber)
             .build();
     }
 
-    private Behavior<String> spawnNewSubscriber() {
-        String subscriberName = UUID.randomUUID().toString();
-        ActorRef<String> firstRef = getContext().spawn(SubscriberActor.create(), subscriberName);
-        firstRef.tell("printSelf");
-        return Behaviors.same();
+
+    private Behavior<MessageProtocol> spawnNewSubscriber(CreateSubscriber message) {
+        ActorRef<MessageProtocol> subscriber = getContext().spawn(SubscriberActor.create(), message.getClientId());
+        subscriber.tell(new PrintSelf());
+        return this;
     }
 
-    private <M extends Signal> Behavior<String> onPostStop() {
-        getContext().getLog().info("IoT Application stopped");
+    private Behavior<MessageProtocol> onPostStop() {
+        getContext().getLog().info("Root actor stopped.");
         return this;
     }
 }
