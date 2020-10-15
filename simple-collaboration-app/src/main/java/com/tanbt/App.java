@@ -1,5 +1,6 @@
 package com.tanbt;
 
+import akka.actor.typed.ActorSystem;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.SocketAcceptor;
@@ -23,7 +24,11 @@ public class App {
     private static Map<String, RSocket> clientRSockets = new ConcurrentHashMap<>();
     private static String sharedData = "";
 
+    private static ActorSystem<Void> appRootActor;
+
     public static void main(String[] args) throws IOException {
+        appRootActor = ActorSystem.create(RootActor.create(), "webapp");
+
         if (args[0] != null) {
             PORT = Integer.valueOf(args[0]);
         }
