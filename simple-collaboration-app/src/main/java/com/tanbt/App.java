@@ -24,12 +24,13 @@ public class App {
     private static Map<String, RSocket> clientRSockets = new ConcurrentHashMap<>();
     private static String sharedData = "";
 
-    private static ActorSystem<Void> appRootActor;
+    // The message (or protocol) is a String object
+    private static ActorSystem<String> appRootActor;
 
     public static void main(String[] args) throws IOException {
         appRootActor = ActorSystem.create(RootActor.create(), "webapp");
 
-        if (args[0] != null) {
+        if (args.length > 0) {
             PORT = Integer.valueOf(args[0]);
         }
         SocketAcceptor socketAcceptor = (setup, sendingSocket) -> {
@@ -103,6 +104,7 @@ public class App {
 
     public static Mono<Payload> subscribeRequestResponseHandler(Payload payload, RSocket clientSocket) {
         clientRSockets.put(payload.getDataUtf8(), clientSocket);
+        appRootActor.tell("subscribe");
         return Mono.just(DefaultPayload.create("Confirm client subscribed: " + payload.getDataUtf8()));
     }
 

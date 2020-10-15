@@ -14,6 +14,15 @@ This acts like a browser that connect to the web app.
 Later on, this server is to host the shared data of collaborative web apps.  
 When two `simple-collaboration-app`s connects to the same `simple-collaboration-server`, their data is synced.
 
+### Actor model
+Actor mode is used by the web app to managed its clients' subscriptions.
+
+The root actor `RootActor` is initialized when the web app is started.
+
+When a client subscribes to the web app, the root actor spawns a `SubscriberActor` for that client.
+When a client sets a new value, `SubscriberActor` signals the change to `RootActor`.
+The shared data is updated by `RootActor`, this actor is then signals the share data to all `SubscriberActor`.
+
 ## Run
 From project root
 * Run the web app: 

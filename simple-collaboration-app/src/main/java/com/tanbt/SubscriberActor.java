@@ -22,7 +22,7 @@ public class SubscriberActor extends AbstractBehavior<String> {
     }
 
     private Behavior<String> printSelf() {
-        System.out.println("Second: " + getContext().getSelf());
+        System.out.println("Subscriber: " + getContext().getSelf());
         return this;
     }
 

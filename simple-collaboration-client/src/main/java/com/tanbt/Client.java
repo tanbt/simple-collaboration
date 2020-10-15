@@ -20,7 +20,7 @@ public class Client {
     private static RSocket socket;
 
     public static void main(String[] args) {
-        if (args[0] != null) {
+        if (args.length > 0) {
             PORT = Integer.valueOf(args[0]);
         }
         socket = RSocketConnector.create()
