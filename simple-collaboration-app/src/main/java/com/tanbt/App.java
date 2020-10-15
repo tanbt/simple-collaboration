@@ -3,6 +3,7 @@ package com.tanbt;
 import akka.actor.typed.ActorSystem;
 import com.tanbt.protocol.CreateSubscriber;
 import com.tanbt.protocol.MessageProtocol;
+import com.tanbt.protocol.NotifySubscriber;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.SocketAcceptor;
@@ -88,6 +89,9 @@ public class App {
     private static void set(String newData) {
         sharedData = newData;
         System.out.println("Shared data updated: " + sharedData);
+
+        appRootActor.tell(new NotifySubscriber(newData));
+
         clientRSockets.entrySet().forEach(entry -> {
             new Thread(() -> {
                 entry.getValue().fireAndForget(DefaultPayload.create("Data updated: " + sharedData))

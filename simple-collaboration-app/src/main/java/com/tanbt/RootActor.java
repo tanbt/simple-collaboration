@@ -9,6 +9,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import com.tanbt.protocol.CreateSubscriber;
 import com.tanbt.protocol.MessageProtocol;
+import com.tanbt.protocol.NotifySubscriber;
 import com.tanbt.protocol.PrintSelf;
 
 /**
@@ -30,15 +31,22 @@ public class RootActor extends AbstractBehavior<MessageProtocol> {
         return newReceiveBuilder()
             .onSignal(PostStop.class, signal -> onPostStop())
             .onMessage(CreateSubscriber.class, this::spawnNewSubscriber)
+            .onMessage(NotifySubscriber.class, this::notifySubscribers)
             .build();
     }
 
+    private Behavior<MessageProtocol> notifySubscribers(NotifySubscriber message) {
+        getContext().getChildren().forEach(subscriber -> subscriber.unsafeUpcast().tell(message));
+        return this;
+    }
 
     private Behavior<MessageProtocol> spawnNewSubscriber(CreateSubscriber message) {
         ActorRef<MessageProtocol> subscriber = getContext().spawn(SubscriberActor.create(), message.getClientId());
         subscriber.tell(new PrintSelf());
         return this;
     }
+
+    // how to notify all sub-actors?
 
     private Behavior<MessageProtocol> onPostStop() {
         getContext().getLog().info("Root actor stopped.");
