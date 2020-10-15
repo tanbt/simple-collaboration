@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 public class Client {
 
     private static int PORT = 7000;
-    private static final String clientId = UUID.randomUUID().toString();
+    private static String clientId = UUID.randomUUID().toString();
     private static RSocket socket;
 
     public static void main(String[] args) {
@@ -31,7 +31,7 @@ public class Client {
                 }))
             .connect(TcpClientTransport.create("localhost", PORT))
             .block();
-        System.out.println("Client id: " + clientId);
+
         Scanner in = new Scanner(System.in);
         String cmd = "";
         do {
@@ -39,6 +39,8 @@ public class Client {
             cmd = in.nextLine();
             switch (cmd) {
                 case "sub":
+                    System.out.print("Please enter client id, no whitespace: ");
+                    clientId = in.nextLine();
                     subscribeWithConfirmation();
                     break;
                 case "set":
