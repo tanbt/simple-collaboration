@@ -13,8 +13,6 @@
     <artifactId>simple-collaboration-client</artifactId>
 
     <name>simple-collaboration-client</name>
-    <!-- FIXME change it to the project's website -->
-    <url>http://www.example.com</url>
 
     <build>
         <pluginManagement>
