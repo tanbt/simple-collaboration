@@ -11,9 +11,7 @@ import io.rsocket.core.RSocketServer;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import io.rsocket.util.DefaultPayload;
 import java.io.IOException;
-import java.time.Duration;
 import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -32,13 +30,17 @@ public class App {
         if (args.length > 0) {
             PORT = Integer.valueOf(args[0]);
         }
+
+        // This socket acceptor is to handle client requests like what a web server does.
+        // It doesn't mean to modify the app's state (shared data) directly,
+        // but it forwards the request from a client to the subscriber actor which is handling that client.
         SocketAcceptor socketAcceptor = (setup, sendingSocket) -> {
             return Mono.just(new RSocket() {
                 @Override
                 public Mono<Payload> requestResponse(Payload payload) {
                     switch (payload.getMetadataUtf8()) {
                         case "subscribe":
-                            return subscribeRequestResponseHandler(payload, sendingSocket);
+                            return subscribe(payload, sendingSocket);
                         case "get":
                             return get();
                         default:
@@ -48,21 +50,8 @@ public class App {
                 }
 
                 @Override
-                public Flux<Payload> requestStream(Payload payload) {
-                    switch (payload.getMetadataUtf8()) {
-                        case "subscribe":
-                            return subscribeRequestStreamHandler();
-                        default:
-                            System.out.println("Server received: " + payload.getDataUtf8());
-                            return Flux.empty();
-                    }
-                }
-
-                @Override
                 public Mono<Void> fireAndForget(Payload payload) {
                     switch (payload.getMetadataUtf8()) {
-                        case "subscribe":
-                            return subscribeFireAndForget(payload, sendingSocket);
                         case "set":
                             set(payload.getDataUtf8());
                             break;
@@ -93,18 +82,8 @@ public class App {
         return Mono.just(DefaultPayload.create(sharedData));
     }
 
-    public static Mono<Payload> subscribeRequestResponseHandler(Payload payload, RSocket clientSocket) {
+    public static Mono<Payload> subscribe(Payload payload, RSocket clientSocket) {
         appRootActor.tell(new CreateSubscriber(payload.getDataUtf8(), clientSocket));
         return Mono.just(DefaultPayload.create("Confirm client subscribed: " + payload.getDataUtf8()));
-    }
-
-    public static Flux<Payload> subscribeRequestStreamHandler() {
-        return Flux.interval(Duration.ofMillis(1000))
-            .map(aLong -> DefaultPayload.create("Update: " + aLong));
-    }
-
-    public static Mono<Void> subscribeFireAndForget(Payload payload, RSocket clientSocket) {
-        appRootActor.tell(new CreateSubscriber(payload.getDataUtf8(), clientSocket));
-        return Mono.empty();
     }
 }

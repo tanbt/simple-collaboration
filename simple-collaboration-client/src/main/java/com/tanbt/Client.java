@@ -56,28 +56,9 @@ public class Client {
         } while (!"exit".equals(cmd));
     }
 
-    private static void sayHello() {
-        socket
-            .requestResponse(DefaultPayload.create(clientId, "hello"))
-            .map(Payload::getDataUtf8)
-            .doOnNext(System.out::println)
-            .block();
-    }
-
-    private static void subscribeStream() {
-        socket.requestStream(DefaultPayload.create(clientId, "subscribe"))
-            .map(Payload::getDataUtf8)
-            .doOnNext(System.out::println)
-            .subscribe();
-    }
-
     private static void subscribeWithConfirmation() {
         socket.requestResponse(DefaultPayload.create(clientId, "subscribe"))
             .map(Payload::getDataUtf8).doOnNext(System.out::println).block();
-    }
-
-    private static void subscribe() {
-        socket.fireAndForget(DefaultPayload.create(clientId, "subscribe")).block();
     }
 
     private static void send(String newData) {
