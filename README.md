@@ -42,3 +42,4 @@ From project root
 ## Question & future development
 * How to properly close a communication without `java.io.IOException: An existing connection was forcibly closed by the remote host` and `ClosedChannelException`.
 * Client can fire-and-forget to "unsubscribe" itself after being subscribed.
+* Remove a subscriber actor when its client socket is closed by the client. 

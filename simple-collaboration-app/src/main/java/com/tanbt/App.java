@@ -12,8 +12,6 @@ import io.rsocket.transport.netty.server.TcpServerTransport;
 import io.rsocket.util.DefaultPayload;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -24,7 +22,6 @@ import reactor.core.publisher.Mono;
 public class App {
 
     private static int PORT = 7000;
-    private static Map<String, RSocket> clientRSockets = new ConcurrentHashMap<>();
     private static String sharedData = "";
 
     private static ActorSystem<MessageProtocol> appRootActor;
@@ -89,18 +86,7 @@ public class App {
     private static void set(String newData) {
         sharedData = newData;
         System.out.println("Shared data updated: " + sharedData);
-
         appRootActor.tell(new NotifySubscriber(newData));
-
-        clientRSockets.entrySet().forEach(entry -> {
-            new Thread(() -> {
-                entry.getValue().fireAndForget(DefaultPayload.create("Data updated: " + sharedData))
-                    .doOnError(err -> {
-                        System.out.println("Channel closed on client: " + entry.getKey());
-                        clientRSockets.remove(entry.getKey());
-                    }).block();
-            }).start();
-        });
     }
 
     public static Mono<Payload> get() {
@@ -108,8 +94,7 @@ public class App {
     }
 
     public static Mono<Payload> subscribeRequestResponseHandler(Payload payload, RSocket clientSocket) {
-        clientRSockets.put(payload.getDataUtf8(), clientSocket);
-        appRootActor.tell(new CreateSubscriber(payload.getDataUtf8()));
+        appRootActor.tell(new CreateSubscriber(payload.getDataUtf8(), clientSocket));
         return Mono.just(DefaultPayload.create("Confirm client subscribed: " + payload.getDataUtf8()));
     }
 
@@ -119,7 +104,7 @@ public class App {
     }
 
     public static Mono<Void> subscribeFireAndForget(Payload payload, RSocket clientSocket) {
-        clientRSockets.put(payload.getDataUtf8(), clientSocket);
+        appRootActor.tell(new CreateSubscriber(payload.getDataUtf8(), clientSocket));
         return Mono.empty();
     }
 }
