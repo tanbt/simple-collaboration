@@ -3,13 +3,13 @@ package com.tanbt;
 import akka.actor.typed.ActorSystem;
 import com.tanbt.protocol.CreateSubscriber;
 import com.tanbt.protocol.MessageProtocol;
-import com.tanbt.protocol.NotifySubscriber;
+import com.tanbt.protocol.SendSharedDataRequest;
+import com.tanbt.protocol.SetSharedData;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.SocketAcceptor;
 import io.rsocket.core.RSocketServer;
 import io.rsocket.transport.netty.server.TcpServerTransport;
-import io.rsocket.util.DefaultPayload;
 import java.io.IOException;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
@@ -20,7 +20,6 @@ import reactor.core.publisher.Mono;
 public class App {
 
     private static int PORT = 7000;
-    private static String sharedData = "";
 
     private static ActorSystem<MessageProtocol> appRootActor;
 
@@ -33,35 +32,30 @@ public class App {
 
         // This socket acceptor is to handle client requests like what a web server does.
         // It doesn't mean to modify the app's state (shared data) directly,
-        // but it forwards the request from a client to the subscriber actor which is handling that client.
-        SocketAcceptor socketAcceptor = (setup, sendingSocket) -> {
-            return Mono.just(new RSocket() {
-                @Override
-                public Mono<Payload> requestResponse(Payload payload) {
-                    switch (payload.getMetadataUtf8()) {
-                        case "subscribe":
-                            return subscribe(payload, sendingSocket);
-                        case "get":
-                            return get();
-                        default:
-                            System.out.println("Server received: " + payload.getDataUtf8());
-                            return Mono.empty();
-                    }
-                }
+        // but it forwards the request from a client to RootActor then to SubscriberActor which communicates to that client.
+        // For example, the request maybe a "set data" request, then SubscriberActor will talk to RootActor to modify the shared data.
 
-                @Override
-                public Mono<Void> fireAndForget(Payload payload) {
-                    switch (payload.getMetadataUtf8()) {
-                        case "set":
-                            set(payload.getDataUtf8());
-                            break;
-                        default:
-                            System.out.println("Server received: " + payload.getDataUtf8());
-                    }
-                    return Mono.empty();
+        // This is a redundant round-trip, as the shared data can be modified from RootActor without forwarding to SubscriberActor,
+        // which can be simplified by a real web server (which allows pushing data to client).
+        SocketAcceptor socketAcceptor = (setup, sendingSocket) -> Mono.just(new RSocket() {
+            @Override
+            public Mono<Void> fireAndForget(Payload payload) {
+                switch (payload.getMetadataUtf8()) {
+                    case "subscribe":
+                        subscribe(payload, sendingSocket);
+                        break;
+                    case "get":
+                        get(payload);
+                        break;
+                    case "set":
+                        set(payload.getDataUtf8());
+                        break;
+                    default:
+                        System.out.println("Server received: " + payload.getDataUtf8());
                 }
-            });
-        };
+                return Mono.empty();
+            }
+        });
 
         Disposable server = RSocketServer.create(socketAcceptor)
             .bind(TcpServerTransport.create("localhost", PORT))
@@ -73,17 +67,15 @@ public class App {
     }
 
     private static void set(String newData) {
-        sharedData = newData;
-        System.out.println("Shared data updated: " + sharedData);
-        appRootActor.tell(new NotifySubscriber(newData));
+        appRootActor.tell(new SetSharedData(newData));
     }
 
-    public static Mono<Payload> get() {
-        return Mono.just(DefaultPayload.create(sharedData));
+    private static void get(Payload payload) {
+        String clientId = payload.getDataUtf8();
+        appRootActor.tell(new SendSharedDataRequest(clientId));
     }
 
-    public static Mono<Payload> subscribe(Payload payload, RSocket clientSocket) {
+    private static void subscribe(Payload payload, RSocket clientSocket) {
         appRootActor.tell(new CreateSubscriber(payload.getDataUtf8(), clientSocket));
-        return Mono.just(DefaultPayload.create("Confirm client subscribed: " + payload.getDataUtf8()));
     }
 }

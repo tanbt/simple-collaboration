@@ -1,13 +1,11 @@
 package com.tanbt;
 
-import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.SocketAcceptor;
 import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.util.DefaultPayload;
 import java.util.Scanner;
-import java.util.UUID;
 import reactor.core.publisher.Mono;
 
 /**
@@ -16,7 +14,7 @@ import reactor.core.publisher.Mono;
 public class Client {
 
     private static int PORT = 7000;
-    private static String clientId = UUID.randomUUID().toString();
+    private static String clientId;
     private static RSocket socket;
 
     public static void main(String[] args) {
@@ -33,16 +31,15 @@ public class Client {
             .block();
 
         Scanner in = new Scanner(System.in);
+        System.out.print("Please enter client id to subscribe [NO WHITE SPACES]: ");
+        clientId = in.nextLine();
+        subscribeWithConfirmation();
+
         String cmd = "";
         do {
-            System.out.print("Enter a command [sub, set, get, exit]: ");
+            System.out.print("Enter a command [set, get, exit]: ");
             cmd = in.nextLine();
             switch (cmd) {
-                case "sub":
-                    System.out.print("Please enter client id [NO WHITE SPACES]: ");
-                    clientId = in.nextLine();
-                    subscribeWithConfirmation();
-                    break;
                 case "set":
                     System.out.print("Please enter new data: ");
                     String newData = in.nextLine();
@@ -57,8 +54,7 @@ public class Client {
     }
 
     private static void subscribeWithConfirmation() {
-        socket.requestResponse(DefaultPayload.create(clientId, "subscribe"))
-            .map(Payload::getDataUtf8).doOnNext(System.out::println).block();
+        socket.fireAndForget(DefaultPayload.create(clientId, "subscribe")).block();
     }
 
     private static void send(String newData) {
@@ -66,7 +62,6 @@ public class Client {
     }
 
     private static void get() {
-        socket.requestResponse(DefaultPayload.create(clientId, "get"))
-            .map(Payload::getDataUtf8).doOnNext(data -> System.out.println("Current data: " + data)).block();
+        socket.fireAndForget(DefaultPayload.create(clientId, "get")).block();
     }
 }

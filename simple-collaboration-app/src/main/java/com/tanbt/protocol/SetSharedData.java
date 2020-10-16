@@ -1,9 +1,9 @@
 package com.tanbt.protocol;
 
-public class NotifySubscriber implements MessageProtocol {
+public class SetSharedData implements MessageProtocol {
     private final String newData;
 
-    public NotifySubscriber(String newData) {
+    public SetSharedData(String newData) {
         this.newData = newData;
     }
 
@@ -11,4 +11,3 @@ public class NotifySubscriber implements MessageProtocol {
         return newData;
     }
 }
-
