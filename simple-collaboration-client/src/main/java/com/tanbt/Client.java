@@ -1,13 +1,11 @@
 package com.tanbt;
 
-import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.SocketAcceptor;
 import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.util.DefaultPayload;
 import java.util.Scanner;
-import java.util.UUID;
 import reactor.core.publisher.Mono;
 
 /**
@@ -16,11 +14,11 @@ import reactor.core.publisher.Mono;
 public class Client {
 
     private static int PORT = 7000;
-    private static final String clientId = UUID.randomUUID().toString();
+    private static String clientId;
     private static RSocket socket;
 
     public static void main(String[] args) {
-        if (args[0] != null) {
+        if (args.length > 0) {
             PORT = Integer.valueOf(args[0]);
         }
         socket = RSocketConnector.create()
@@ -31,16 +29,17 @@ public class Client {
                 }))
             .connect(TcpClientTransport.create("localhost", PORT))
             .block();
-        System.out.println("Client id: " + clientId);
+
         Scanner in = new Scanner(System.in);
+        System.out.print("Please enter client id to subscribe [NO WHITE SPACES]: ");
+        clientId = in.nextLine();
+        subscribeWithConfirmation();
+
         String cmd = "";
         do {
-            System.out.print("Enter a command [sub, set, get, exit]: ");
+            System.out.print("Enter a command [set, get, exit]: ");
             cmd = in.nextLine();
             switch (cmd) {
-                case "sub":
-                    subscribeWithConfirmation();
-                    break;
                 case "set":
                     System.out.print("Please enter new data: ");
                     String newData = in.nextLine();
@@ -54,27 +53,7 @@ public class Client {
         } while (!"exit".equals(cmd));
     }
 
-    private static void sayHello() {
-        socket
-            .requestResponse(DefaultPayload.create(clientId, "hello"))
-            .map(Payload::getDataUtf8)
-            .doOnNext(System.out::println)
-            .block();
-    }
-
-    private static void subscribeStream() {
-        socket.requestStream(DefaultPayload.create(clientId, "subscribe"))
-            .map(Payload::getDataUtf8)
-            .doOnNext(System.out::println)
-            .subscribe();
-    }
-
     private static void subscribeWithConfirmation() {
-        socket.requestResponse(DefaultPayload.create(clientId, "subscribe"))
-            .map(Payload::getDataUtf8).doOnNext(System.out::println).block();
-    }
-
-    private static void subscribe() {
         socket.fireAndForget(DefaultPayload.create(clientId, "subscribe")).block();
     }
 
@@ -83,7 +62,6 @@ public class Client {
     }
 
     private static void get() {
-        socket.requestResponse(DefaultPayload.create(clientId, "get"))
-            .map(Payload::getDataUtf8).doOnNext(data -> System.out.println("Current data: " + data)).block();
+        socket.fireAndForget(DefaultPayload.create(clientId, "get")).block();
     }
 }
