@@ -12,7 +12,10 @@ import com.tanbt.protocol.MessageProtocol;
 import com.tanbt.protocol.NotifyClient;
 import com.tanbt.protocol.SendSharedData;
 import com.tanbt.protocol.SendSharedDataRequest;
+import com.tanbt.protocol.SetCollaborationServer;
 import com.tanbt.protocol.SetSharedData;
+import io.rsocket.RSocket;
+import io.rsocket.util.DefaultPayload;
 
 /**
  * The root actor of the application
@@ -20,6 +23,7 @@ import com.tanbt.protocol.SetSharedData;
 public class RootActor extends AbstractBehavior<MessageProtocol> {
 
     private String sharedData = "";
+    private RSocket collaborationServerSocket;
 
     public static Behavior<MessageProtocol> create() {
         return Behaviors.setup(RootActor::new);
@@ -38,8 +42,15 @@ public class RootActor extends AbstractBehavior<MessageProtocol> {
             .onMessage(SetSharedData.class, this::setSharedData)
             .onMessage(SendSharedDataRequest.class, this::forwardGetRequest)
             .onMessage(SendSharedData.class, this::sendSharedData)
+            .onMessage(SetCollaborationServer.class, this::setCollaborationServer)
             .build();
     }
+
+    private Behavior<MessageProtocol> setCollaborationServer(SetCollaborationServer message) {
+        this.collaborationServerSocket = message.getCollaborationServerSocket();
+        return this;
+    }
+
 
     private Behavior<MessageProtocol> sendSharedData(SendSharedData message) {
         message.getSubscriberActor().tell(new NotifyClient(sharedData));
@@ -55,6 +66,13 @@ public class RootActor extends AbstractBehavior<MessageProtocol> {
     }
 
     private Behavior<MessageProtocol> setSharedData(SetSharedData message) {
+        // send new data to collaboration server
+        if (collaborationServerSocket != null && !sharedData.equals(message.getNewData())) {
+            Change change = new Change(sharedData, message.getNewData());
+            collaborationServerSocket.fireAndForget(DefaultPayload.create(change.toJson(), "set")).block();
+        }
+
+        // notify subscribers
         sharedData = message.getNewData();
         System.out.println("Shared data updated: " + sharedData);
         getContext().getChildren().forEach(subscriber -> subscriber.unsafeUpcast().tell(message));
