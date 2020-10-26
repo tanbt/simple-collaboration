@@ -58,8 +58,9 @@ From any client, enter "set", then input a string. See how the new data is propa
 
 ## Limitations
 * Lots and lots of critical sections are not considered.
+* Most of the communication is fire-and-forget. DON'T FORGET TO CALL `.block()` - selfnote.
 
 ## Question & future development
 * How to properly close a communication without `java.io.IOException: An existing connection was forcibly closed by the remote host` and `ClosedChannelException`.
 * Client can fire-and-forget to "unsubscribe" itself after being subscribed.
-* Remove a subscriber actor when its client socket is closed by the client. 
+* Remove a subscriber actor when its client socket is closed by the client.

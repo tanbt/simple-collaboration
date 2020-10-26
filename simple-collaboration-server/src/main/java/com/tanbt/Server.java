@@ -79,6 +79,6 @@ public class Server {
             valuesHistory.add(change.getValue());
         }
         System.out.println("Collaboration data updated: " + change.getValue());
-        appsRSockets.forEach(appSocket -> appSocket.fireAndForget(DefaultPayload.create(change.getValue(), "serverUpdates")));
+        appsRSockets.forEach(appSocket -> appSocket.fireAndForget(DefaultPayload.create(change.getValue(), "serverUpdates")).block());
     }
 }
