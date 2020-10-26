@@ -24,17 +24,34 @@ When a client sets a new value, `SubscriberActor` signals the change to `RootAct
 The shared data is updated by `RootActor`, this actor is then signals the share data to all `SubscriberActor`.
 
 ## Run
-From project root
-* Run the web app: 
-  * `mvn -pl simple-collaboration-app exec:java`
-  * or specify a port `mvn -pl simple-collaboration-app exec:java -Dexec.args=7001`. Default port is 7000.
+From project root, run each command below in separate terminals:
+* Run the collaboration server on the default port `7070`:
+
+```mvn -pl simple-collaboration-server exec:java```
+
+* Run two apps on port `7000` and `7001` that are both connected to the collaboration server 
+on port `7070` in separate terminals:
+
+```
+mvn -pl simple-collaboration-app exec:java -Dexec.args="7000 7070"
+mvn -pl simple-collaboration-app exec:java -Dexec.args="7001 7070"
+```
 
 * Open multiple clients on different terminals:
-  * `mvn -pl simple-collaboration-client exec:java`
-  * or specify the port of the web app `mvn -pl simple-collaboration-client exec:java -Dexec.args=7001`
-  * On some clients, enter "sub" to subscribe the client to the web app
-   ( just like opening the browser tab to the web app)
-  * One a client, enter "set" then enter a string. See how the subscribing clients are notified. 
+For example, two clients connect to app "7000" and one connects to app "7001":
+```
+# name: client-one
+mvn -pl simple-collaboration-client exec:java -Dexec.args=7000
+
+# name: client-two
+mvn -pl simple-collaboration-client exec:java -Dexec.args=7000
+
+# name: client-three
+mvn -pl simple-collaboration-client exec:java -Dexec.args=7001
+```
+when running each of the commands above, enter its client name.
+
+From any client, enter "set", then input a string. See how the new data is propagated through each node. 
 ## References
 * [RoutingMetadata](https://github.com/rsocket/rsocket/blob/master/Extensions/Routing.md)
 * [Support TLS](https://stackoverflow.com/questions/58944152/rsocket-not-working-when-secured-with-tls-server-java-lang-unsupportedoperatio)

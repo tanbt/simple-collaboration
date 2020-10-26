@@ -74,7 +74,7 @@ public class RootActor extends AbstractBehavior<MessageProtocol> {
 
         // notify subscribers
         sharedData = message.getNewData();
-        System.out.println("Shared data updated: " + sharedData);
+        System.out.println("Local shared data updated: " + sharedData);
         getContext().getChildren().forEach(subscriber -> subscriber.unsafeUpcast().tell(message));
         return this;
     }
