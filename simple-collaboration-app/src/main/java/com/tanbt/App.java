@@ -5,7 +5,8 @@ import com.tanbt.protocol.CreateSubscriber;
 import com.tanbt.protocol.MessageProtocol;
 import com.tanbt.protocol.SendSharedDataRequest;
 import com.tanbt.protocol.SetCollaborationServer;
-import com.tanbt.protocol.SetSharedData;
+import com.tanbt.protocol.SetSharedDataFromClient;
+import com.tanbt.protocol.SetSharedDataFromServer;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.SocketAcceptor;
@@ -100,11 +101,11 @@ public class App {
     }
 
     private static void updateLocalDataFromServer(String changeData) {
-        appRootActor.tell(new SetSharedData(changeData));
+        appRootActor.tell(new SetSharedDataFromServer(changeData));
     }
 
     private static void set(String newData) {
-        appRootActor.tell(new SetSharedData(newData));
+        appRootActor.tell(new SetSharedDataFromClient(newData));
     }
 
     private static void get(Payload payload) {

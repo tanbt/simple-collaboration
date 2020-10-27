@@ -11,7 +11,7 @@ import com.tanbt.protocol.MessageProtocol;
 import com.tanbt.protocol.NotifyClient;
 import com.tanbt.protocol.SendSharedData;
 import com.tanbt.protocol.SendSharedDataRequest;
-import com.tanbt.protocol.SetSharedData;
+import com.tanbt.protocol.SetSharedDataFromClient;
 import io.rsocket.RSocket;
 import io.rsocket.util.DefaultPayload;
 
@@ -34,12 +34,12 @@ public class SubscriberActor extends AbstractBehavior<MessageProtocol> {
         return newReceiveBuilder()
             .onMessage(CreateSubscriber.class, this::createSelf)
             .onMessage(SendSharedDataRequest.class, this::askForSharedData)
-            .onMessage(SetSharedData.class, this::notifyClients)
+            .onMessage(SetSharedDataFromClient.class, this::notifyClients)
             .onMessage(NotifyClient.class, this::notifyClient)
             .build();
     }
 
-    private Behavior<MessageProtocol> notifyClients(SetSharedData message) {
+    private Behavior<MessageProtocol> notifyClients(SetSharedDataFromClient message) {
         clientSocket.fireAndForget(DefaultPayload.create("Data updated: " + message.getNewData())).block();
         return this;
     }

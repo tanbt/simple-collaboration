@@ -40,7 +40,7 @@ public class Server {
             public Mono<Void> fireAndForget(Payload payload) {
                 switch (payload.getMetadataUtf8()) {
                     case "set":
-                        set(payload.getDataUtf8());
+                        set(payload.getDataUtf8(), sendingSocket);
                         break;
                     default:
                         System.out.println("Server received: " + payload.getDataUtf8());
@@ -73,12 +73,14 @@ public class Server {
         return Flux.fromStream(valuesHistory.stream().map(DefaultPayload::create));
     }
 
-    private static void set(String dataUtf8) {
+    private static void set(String dataUtf8, RSocket sendingSocket) {
         Change change = Change.fromJson(dataUtf8);
         if (valuesHistory.getLast().equals(change.getOldValue())) {
             valuesHistory.add(change.getValue());
         }
         System.out.println("Collaboration data updated: " + change.getValue());
-        appsRSockets.forEach(appSocket -> appSocket.fireAndForget(DefaultPayload.create(change.getValue(), "serverUpdates")).block());
+        appsRSockets.stream().filter(appSocket -> !appSocket.equals(sendingSocket))
+            .forEach(appSocket -> appSocket.fireAndForget(DefaultPayload.create(change.getValue(), "serverUpdates"))
+                .block());
     }
 }

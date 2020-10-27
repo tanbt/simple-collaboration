@@ -1,9 +1,9 @@
 package com.tanbt.protocol;
 
-public class SetSharedData implements MessageProtocol {
+public class SetSharedDataFromClient implements MessageProtocol {
     private final String newData;
 
-    public SetSharedData(String newData) {
+    public SetSharedDataFromClient(String newData) {
         this.newData = newData;
     }
 

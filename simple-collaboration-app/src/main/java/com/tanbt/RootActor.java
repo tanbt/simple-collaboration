@@ -13,7 +13,8 @@ import com.tanbt.protocol.NotifyClient;
 import com.tanbt.protocol.SendSharedData;
 import com.tanbt.protocol.SendSharedDataRequest;
 import com.tanbt.protocol.SetCollaborationServer;
-import com.tanbt.protocol.SetSharedData;
+import com.tanbt.protocol.SetSharedDataFromClient;
+import com.tanbt.protocol.SetSharedDataFromServer;
 import io.rsocket.RSocket;
 import io.rsocket.util.DefaultPayload;
 
@@ -22,7 +23,7 @@ import io.rsocket.util.DefaultPayload;
  */
 public class RootActor extends AbstractBehavior<MessageProtocol> {
 
-    private String sharedData = "";
+    private volatile String sharedData = "";
     private RSocket collaborationServerSocket;
 
     public static Behavior<MessageProtocol> create() {
@@ -39,7 +40,8 @@ public class RootActor extends AbstractBehavior<MessageProtocol> {
         return newReceiveBuilder()
             .onSignal(PostStop.class, signal -> onPostStop())
             .onMessage(CreateSubscriber.class, this::spawnNewSubscriber)
-            .onMessage(SetSharedData.class, this::setSharedData)
+            .onMessage(SetSharedDataFromServer.class, this::setSharedDataFromServer) // keep this order because SetSharedDataFromServer extends SetSharedDataFromClient
+            .onMessage(SetSharedDataFromClient.class, this::setSharedDataFromClient)
             .onMessage(SendSharedDataRequest.class, this::forwardGetRequest)
             .onMessage(SendSharedData.class, this::sendSharedData)
             .onMessage(SetCollaborationServer.class, this::setCollaborationServer)
@@ -65,17 +67,30 @@ public class RootActor extends AbstractBehavior<MessageProtocol> {
         return this;
     }
 
-    private Behavior<MessageProtocol> setSharedData(SetSharedData message) {
-        // send new data to collaboration server
-        if (collaborationServerSocket != null && !sharedData.equals(message.getNewData())) {
-            Change change = new Change(sharedData, message.getNewData());
-            collaborationServerSocket.fireAndForget(DefaultPayload.create(change.toJson(), "set")).block();
-        }
+    private Behavior<MessageProtocol> setSharedDataFromClient(SetSharedDataFromClient message) {
+        if (!sharedData.equals(message.getNewData())) {
+            String change = new Change(sharedData, message.getNewData()).toJson();
+            sharedData = message.getNewData();
 
-        // notify subscribers
-        sharedData = message.getNewData();
-        System.out.println("Local shared data updated: " + sharedData);
-        getContext().getChildren().forEach(subscriber -> subscriber.unsafeUpcast().tell(message));
+            // Notify collaboration server
+            if (collaborationServerSocket != null) {
+                collaborationServerSocket.fireAndForget(DefaultPayload.create(change, "set")).block();
+            }
+
+            // Notify other subscribers
+            System.out.println("Local data updated from client: " + sharedData);
+            getContext().getChildren().forEach(subscriber -> subscriber.unsafeUpcast().tell(message));
+        }
+        return this;
+    }
+
+    private Behavior<MessageProtocol> setSharedDataFromServer(SetSharedDataFromServer message) {
+        if (!sharedData.equals(message.getNewData())) {
+            // No need to notify back to server. Notify other subscribers only.
+            sharedData = message.getNewData();
+            System.out.println("Local shared data updated from server: " + sharedData);
+            getContext().getChildren().forEach(subscriber -> subscriber.unsafeUpcast().tell(message));
+        }
         return this;
     }
 

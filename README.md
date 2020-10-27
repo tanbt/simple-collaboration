@@ -26,12 +26,12 @@ The shared data is updated by `RootActor`, this actor is then signals the share 
 ## Run
 From project root, run each command below in separate terminals:
 * Run the collaboration server on the default port `7070`:
-
-```mvn -pl simple-collaboration-server exec:java```
+```
+mvn -pl simple-collaboration-server exec:java
+```
 
 * Run two apps on port `7000` and `7001` that are both connected to the collaboration server 
 on port `7070` in separate terminals:
-
 ```
 mvn -pl simple-collaboration-app exec:java -Dexec.args="7000 7070"
 mvn -pl simple-collaboration-app exec:java -Dexec.args="7001 7070"
@@ -51,7 +51,8 @@ mvn -pl simple-collaboration-client exec:java -Dexec.args=7001
 ```
 when running each of the commands above, enter its client name.
 
-From any client, enter "set", then input a string. See how the new data is propagated through each node. 
+From any client, enter "set", then input a string.
+See how the new data is propagated through each node down to other clients. 
 ## References
 * [RoutingMetadata](https://github.com/rsocket/rsocket/blob/master/Extensions/Routing.md)
 * [Support TLS](https://stackoverflow.com/questions/58944152/rsocket-not-working-when-secured-with-tls-server-java-lang-unsupportedoperatio)
