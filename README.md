@@ -64,4 +64,5 @@ See how the new data is propagated through each node down to other clients.
 ## Question & future development
 * How to properly close a communication without `java.io.IOException: An existing connection was forcibly closed by the remote host` and `ClosedChannelException`.
 * Client can fire-and-forget to "unsubscribe" itself after being subscribed.
+* Remove the closing RSocket from `appsRSockets` when the app is closed.
 * Remove a subscriber actor when its client socket is closed by the client.

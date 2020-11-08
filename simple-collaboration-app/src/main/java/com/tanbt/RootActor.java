@@ -98,6 +98,8 @@ public class RootActor extends AbstractBehavior<MessageProtocol> {
         ActorRef<MessageProtocol> subscriber = getContext().spawn(SubscriberActor.create(), message.getClientId());
         message.setParentActor(getContext().getSelf());
         subscriber.tell(message);
+
+        message.reply(subscriber);
         return this;
     }
 
