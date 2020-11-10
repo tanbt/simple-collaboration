@@ -24,20 +24,25 @@ When a client sets a new value, `SubscriberActor` signals the change to `RootAct
 The shared data is updated by `RootActor`, this actor is then signals the share data to all `SubscriberActor`.
 
 ## Run
-From project root, run each command below in separate terminals:
-* Run the collaboration server on the default port `7070`:
+Packaging the app:
+```
+mvn clean package -DskipTests
+```
+
+From project root, run each command below in a separate terminal in this order:
+1. Run the collaboration server on the default port `7070`:
 ```
 mvn -pl simple-collaboration-server exec:java
 ```
 
-* Run two apps on port `7000` and `7001` that are both connected to the collaboration server 
+2. Run two apps on port `7000` and `7001` that are both connected to the collaboration server 
 on port `7070` in separate terminals:
 ```
 mvn -pl simple-collaboration-app exec:java -Dexec.args="7000 7070"
 mvn -pl simple-collaboration-app exec:java -Dexec.args="7001 7070"
 ```
 
-* Open multiple clients on different terminals:
+3. Open multiple clients on different terminals:
 For example, two clients connect to app "7000" and one connects to app "7001":
 ```
 # name: client-one
