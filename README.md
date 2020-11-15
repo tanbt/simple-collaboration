@@ -62,7 +62,10 @@ See how the new data is propagated through each node down to other clients.
 * Most of the communication is fire-and-forget. DON'T FORGET TO CALL `.block()` - selfnote.
 
 ## Question & future development
-* How to properly close a communication without `java.io.IOException: An existing connection was forcibly closed by the remote host` and `ClosedChannelException`.
+* Close a RSocket communication.
+  * The client can call e.g. `collaborationServerSocket.dispose();` to close the RSocket connection properly.
+  * In case the client is terminated suddenly, the server shows `java.io.IOException: An existing connection was forcibly closed by the remote host`.
+  This warning can be ignored, but some disposal logic may need to be handed in RSocket `dispose()`.
 * Client can fire-and-forget to "unsubscribe" itself after being subscribed.
 * Remove the closing RSocket from `appsRSockets` when the app is closed.
 * Remove a subscriber actor when its client socket is closed by the client.
