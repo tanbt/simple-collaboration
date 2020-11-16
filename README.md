@@ -56,6 +56,7 @@ See how the new data is propagated through each node down to other clients.
 ## References
 * [RoutingMetadata](https://github.com/rsocket/rsocket/blob/master/Extensions/Routing.md)
 * [Support TLS](https://stackoverflow.com/questions/58944152/rsocket-not-working-when-secured-with-tls-server-java-lang-unsupportedoperatio)
+* [Step verifier](https://www.baeldung.com/reactive-streams-step-verifier-test-publisher)
 
 ## Limitations
 * Lots and lots of critical sections are not considered.

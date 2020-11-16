@@ -24,7 +24,14 @@ public class Server {
         if (args.length > 0) {
             PORT = Integer.valueOf(args[0]);
         }
+        Disposable server = startServer();
+        valuesHistory.add("Init data");
 
+        System.in.read();
+        stopServer(server);
+    }
+
+    static Disposable startServer() {
         SocketAcceptor socketAcceptor = (setup, sendingSocket) -> Mono.just(new RSocket() {
             @Override
             public Mono<Payload> requestResponse(Payload payload) {
@@ -61,12 +68,11 @@ public class Server {
             .bind(TcpServerTransport.create("localhost", PORT))
             .subscribe();
         System.out.println("Collaboration server is running at port " + PORT);
+        return server;
+    }
 
-        valuesHistory.add("Init data");
-
-        System.in.read();
+    static void stopServer(Disposable server) {
         server.dispose();
-
     }
 
     private static Flux<Payload> streamHandler() {
